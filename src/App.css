@@ -1,0 +1,1017 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
+  color: #26221e;
+  background: #f4f3f0;
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- ヘッダー ---------- */
+
+.header {
+  height: 52px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e4e2dd;
+  flex-shrink: 0;
+  transition: margin-top 0.22s ease;
+}
+
+/* 一覧を下へスクロール中は上へ引き上げて隠す */
+.header-hidden {
+  margin-top: -52px;
+}
+
+.header-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.proto-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a837a;
+  background: #f0eee9;
+  border-radius: 999px;
+  padding: 3px 8px;
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+
+/* 地図の縮尺ボタン（右下・投稿ボタンの上に重ならないよう持ち上げる） */
+.leaflet-bottom.leaflet-right .leaflet-control-zoom {
+  margin-right: 18px;
+  /* 右下のボタンが上へ逃げたら、縮尺ボタンも同じだけ上げる */
+  margin-bottom: calc(122px + var(--fab-raise, 0px));
+  transition: margin-bottom 0.18s ease;
+}
+
+.leaflet-control-zoom a {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  font-size: 20px;
+}
+
+.leaflet-control-scale {
+  margin-left: 12px;
+  margin-bottom: 12px;
+}
+
+/* 現在地・投稿ボタン（右下に固定・縦並び） */
+.fab-stack {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  transition: bottom 0.18s ease;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.fab {
+  min-width: 128px; /* 現在地と投稿で大きさを揃える */
+  height: 52px;
+  line-height: 1; /* 絵文字の行高差で高さがずれないように固定 */
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  background: #e8590c;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 13px 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fab:hover {
+  background: #d34f0a;
+}
+
+.fab-close {
+  background: #5f594f;
+}
+
+.fab-close:hover {
+  background: #4a453d;
+}
+
+/* 現在地は投稿と同じ大きさ。色だけ控えめにする（白地） */
+.fab-locate {
+  color: #3d382f;
+  background: #fff;
+  border-color: #ddd9d2;
+}
+
+.fab-locate:hover {
+  background: #f6f5f2;
+  border-color: #b8b2a8;
+}
+
+.fab-locate-on,
+.fab-locate-on:hover {
+  color: #1d6fb8;
+  border-color: #7fb2e0;
+  background: #f0f6fc;
+}
+
+.fab-locate:disabled,
+.fab-locate:disabled:hover {
+  color: #a8a29a;
+  background: #f6f5f2;
+  cursor: progress;
+}
+
+/* ---------- タブ（狭い画面のみ） ---------- */
+
+.tabs {
+  display: none;
+  background: #fff;
+  border-bottom: 1px solid #e4e2dd;
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8a837a;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.tab-active {
+  color: #e8590c;
+  border-bottom-color: #e8590c;
+}
+
+/* ---------- レイアウト ---------- */
+
+.main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.list-pane {
+  width: 400px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e4e2dd;
+  background: #faf9f7;
+}
+
+.map-pane {
+  flex: 1;
+  min-width: 0;
+  position: relative; /* 地図上のポップアップの基準 */
+}
+
+/* 地図上に重ねるカード（閉じるボタン付き） */
+.map-popup {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  max-width: 420px;
+  z-index: 1100;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.3));
+}
+
+.map-popup .card {
+  cursor: default;
+}
+
+.popup-close {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #ddd9d2;
+  background: #fff;
+  color: #5f594f;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.popup-close:hover {
+  background: #f6f5f2;
+  border-color: #b8b2a8;
+}
+
+.map {
+  height: 100%;
+  width: 100%;
+}
+
+/* ---------- 一覧 ---------- */
+
+/* ジャンル絞り込みのプルダウン */
+.list-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #eceae5;
+  flex-shrink: 0;
+  overflow: hidden; /* 画面幅を超えさせない */
+}
+
+.genre-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0; /* 画面外へはみ出さないよう縮められるようにする */
+  background: #fff;
+  border: 1.5px solid #ddd9d2;
+  border-radius: 9px;
+}
+
+.genre-select-wrap select {
+  width: 100%;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #3d382f;
+  padding: 7px 26px 7px 10px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.genre-select-wrap::after {
+  content: '▼';
+  position: absolute;
+  right: 9px;
+  font-size: 9px;
+  color: #8a837a;
+  pointer-events: none;
+}
+
+/* 件数と補足（並び替えの下段） */
+.list-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #eceae5;
+  flex-shrink: 0;
+}
+
+.sort-warn {
+  font-size: 11px;
+  color: #9a6700;
+}
+
+.merged-note {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d6fb8;
+  background: #f0f6fc;
+  border-radius: 999px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
+/* 現在地マーカー（青い点） */
+.my-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1d7fd6;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 3px rgba(29, 127, 214, 0.35), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 投稿フォームの位置指定 */
+.pos-field {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.use-mypos {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1d6fb8;
+  background: #fff;
+  border: 1.5px solid #7fb2e0;
+  border-radius: 999px;
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.use-mypos:hover {
+  background: #f0f6fc;
+}
+
+.use-mypos:disabled {
+  color: #a8a29a;
+  border-color: #ddd9d2;
+  background: #f6f5f2;
+  cursor: progress;
+}
+
+/* 見出しの距離表示 */
+.title-dist {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d6fb8;
+  background: #f0f6fc;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.count {
+  font-size: 12px;
+  color: #8a837a;
+}
+
+.empty-note {
+  font-size: 13px;
+  color: #8a837a;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.cards {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 2.5px solid #e4e2dd;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+/* 営業状態を縁取りの色と、その薄い色の背景に反映 */
+.card-st-ok {
+  border-color: #7cc49a;
+  background: #f4fbf7;
+}
+
+.card-st-limited {
+  border-color: #e3b95c;
+  background: #fdfaf1;
+}
+
+.card-st-closed {
+  border-color: #d98a8a;
+  background: #fdf6f6;
+}
+
+.card-st-ok:hover {
+  background: #ecf8f1;
+}
+
+.card-st-limited:hover {
+  background: #fbf5e8;
+}
+
+.card-st-closed:hover {
+  background: #fbeeee;
+}
+
+.card-selected,
+.card-selected:hover {
+  border-color: #e8590c;
+  box-shadow: 0 0 0 1px #e8590c;
+  background: #fff6f0;
+}
+
+/* カード上段：絵文字アイコン＋本文（リアクション列はこの下でカード全幅） */
+.card-upper {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* 種類の絵文字アイコン（大きめ・文字ラベルと必ず併記） */
+.card-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 1;
+  background: #fff;
+  border: 2px solid #5f6b7a;
+  border-radius: 50%;
+}
+
+.card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+/* ジャンルと営業状態を横並びで表示 */
+.card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.type-chip {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5f594f;
+  background: #f0eee9;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.time {
+  font-size: 11px;
+  color: #a09a90;
+}
+
+/* 見出し：ブランド／店舗名／所在地 */
+.card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.title-brand {
+  color: #5f594f;
+}
+
+.title-name {
+  color: #26221e;
+}
+
+.title-area {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a837a;
+}
+
+/* メタ情報（非公開・継続中・追記）は1行にまとめる */
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 12px;
+  margin-top: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.loc-private {
+  color: #8a837a;
+}
+
+.loc-private::before {
+  content: '🔒 ';
+}
+
+/* 営業状態バッジ（●＋文字ラベル。色だけに意味を持たせない） */
+.status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.status-badge::before {
+  content: '● ';
+}
+
+/* 営業状態のプルダウン（▼で「変更できる」ことを示す） */
+.status-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0 0 9px;
+}
+
+.status-select-wrap select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: inherit;
+  padding: 3px 19px 3px 3px;
+  cursor: pointer;
+}
+
+.status-select-wrap::after {
+  content: '▼';
+  position: absolute;
+  right: 7px;
+  font-size: 8px;
+  pointer-events: none;
+}
+
+.status-select-wrap select:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.st-ok {
+  color: #2f7d4f;
+  background: #edf8f1;
+}
+
+.st-limited {
+  color: #9a6700;
+  background: #fdf6e3;
+}
+
+.st-closed {
+  color: #a12626;
+  background: #fbeeee;
+}
+
+/* 追記（コメント）一覧：選択中のカードだけに表示。区切りなしの素朴な表示 */
+/* 掲示板：書き込みが時系列で積み上がる */
+.board {
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 書き込みが増えてもカードが伸び続けないよう、選択時は中でスクロールさせる */
+.board-scroll {
+  max-height: 190px;
+  overflow-y: auto;
+  padding-right: 4px;
+  border-left: 2px solid #e8e4dd;
+  padding-left: 8px;
+  margin-left: 1px;
+}
+
+.board-line {
+  font-size: 12px;
+  color: #3d382f;
+  line-height: 1.55;
+}
+
+.board-time {
+  font-size: 10.5px;
+  color: #a09a90;
+  white-space: nowrap;
+}
+
+.board-more {
+  font-size: 11px;
+  color: #a09a90;
+}
+
+/* リアクション列（全カード下部）：3ボタンを幅いっぱいに横一列固定・改行しない */
+.react-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.react-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  background: #fff;
+  border: 1.5px solid #ddd9d2;
+  border-radius: 999px;
+  padding: 6px 5px;
+  cursor: pointer;
+}
+
+/* 幅が足りない時はラベルだけ縮める（カウンターは必ず見せる） */
+.react-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.react-keep {
+  color: #2f7d4f;
+}
+
+.react-keep:hover {
+  background: #f0faf4;
+  border-color: #2f9e5f;
+}
+
+.react-change {
+  color: #9a6700;
+}
+
+.react-change:hover {
+  background: #fdf6e3;
+  border-color: #e6a700;
+}
+
+.react-report {
+  color: #a12626;
+}
+
+.react-report:hover {
+  background: #fbeeee;
+  border-color: #c05252;
+}
+
+.react-btn:disabled,
+.react-btn:disabled:hover {
+  color: #a8a29a;
+  border-color: #e6e2dc;
+  background: #f6f5f2;
+  cursor: not-allowed;
+}
+
+.react-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0;
+  background: #f0eee9;
+  color: #3d382f;
+  border-radius: 999px;
+  padding: 1px 5px;
+}
+
+.react-btn:disabled .react-count {
+  color: #a8a29a;
+}
+
+.cooldown-note {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #8a837a;
+  line-height: 1.5;
+}
+
+/* 「今どう？」コメント入力欄（選択中のカードに常設・区切りなし） */
+.comment-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.comment-form input {
+  flex: 1;
+  font-size: 13px;
+  padding: 7px 9px;
+  border: 1px solid #ddd9d2;
+  border-radius: 7px;
+}
+
+.comment-send {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #4a7ab5;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 13px;
+  cursor: pointer;
+}
+
+.comment-send:disabled {
+  background: #d8d3cb;
+  cursor: not-allowed;
+}
+
+/* ---------- 地図ピン ---------- */
+
+.pin-wrap {
+  background: none;
+  border: none;
+}
+
+.pin {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 3px solid #5f6b7a;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s;
+}
+
+.pin-emoji {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.pin-selected {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 4px rgba(232, 89, 12, 0.6), 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* 休止・閉鎖のピンはグレーアウト（表示は消さない） */
+.pin-closed {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.pin-closed.pin-selected {
+  opacity: 0.85;
+}
+
+.pin-draft {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e8590c;
+  background: #fff;
+  border: 3px dashed #e8590c;
+}
+
+/* ---------- 投稿フォーム ---------- */
+
+.form-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 74px; /* 右下の投稿ボタンと重ならない位置 */
+  width: 340px;
+  max-width: calc(100% - 32px);
+  background: #fff;
+  border: 1px solid #ddd9d2;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  z-index: 1200;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.form-row label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5f594f;
+  width: 34px;
+  flex-shrink: 0;
+}
+
+.form-row select,
+.form-row input {
+  flex: 1;
+  font-size: 13px;
+  padding: 7px 9px;
+  border: 1px solid #ddd9d2;
+  border-radius: 7px;
+  background: #fff;
+}
+
+/* 投稿フォームの営業状態えらび */
+.status-select {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.status-option {
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #fff;
+  border: 1.5px solid #ddd9d2;
+  border-radius: 999px;
+  padding: 5px 10px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.status-option::before {
+  content: '● ';
+}
+
+.status-option-active {
+  opacity: 1;
+  border-width: 2px;
+}
+
+.status-option.st-ok.status-option-active {
+  border-color: #2f9e5f;
+}
+
+.status-option.st-limited.status-option-active {
+  border-color: #e6a700;
+}
+
+.status-option.st-closed.status-option-active {
+  border-color: #c92a2a;
+}
+
+.pos-ok {
+  font-size: 12px;
+  color: #2f9e5f;
+}
+
+.pos-none {
+  font-size: 12px;
+  color: #e8590c;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.form-note {
+  font-size: 11px;
+  color: #8a837a;
+  margin-bottom: 6px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.submit-button {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: #e8590c;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  cursor: pointer;
+}
+
+.submit-button:disabled {
+  background: #d8d3cb;
+  cursor: not-allowed;
+}
+
+/* ---------- タブレット：横に広い一覧は2列にして間延びを防ぐ ---------- */
+
+@media (min-width: 620px) and (max-width: 800px) {
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+    gap: 10px;
+  }
+
+  .card {
+    align-self: start;
+  }
+
+  /* ポップアップは画面下部で読みやすい幅に */
+  .map-popup {
+    left: auto;
+    right: 12px;
+    width: 380px;
+  }
+}
+
+/* 横長タブレット（一覧＋地図の2画面）では一覧をやや広く */
+@media (min-width: 801px) and (max-width: 1100px) {
+  .list-pane {
+    width: 360px;
+    min-width: 300px;
+  }
+}
+
+/* 反応ボタンは広い画面で伸びすぎないようにする */
+.react-btn {
+  max-width: 220px;
+}
+
+/* ---------- 狭い画面：一覧⇄地図をタブで切替 ---------- */
+
+@media (max-width: 800px) {
+  .tabs {
+    display: flex;
+  }
+
+  /* 一覧タブでは現在地ボタンを出さない（地図タブ専用の操作のため） */
+  .pane-list .fab-locate {
+    display: none;
+  }
+
+  /* ヘッダーを1行に収める（現在地ボタンと並べるため） */
+  .header-title {
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .proto-tag {
+    display: none;
+  }
+
+  .list-pane,
+  .map-pane {
+    display: none;
+    width: 100%;
+    min-width: 0;
+    border-right: none;
+  }
+
+  .list-pane.pane-active {
+    display: flex;
+  }
+
+  .map-pane.pane-active {
+    display: block;
+  }
+
+  .form-panel {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+}
